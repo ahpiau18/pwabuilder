@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>主屏幕快捷方式生成器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#F4F5F1;
+    --card:#FFFFFF;
+    --ink:#15201C;
+    --ink-soft:#5B655F;
+    --line:#DFE3DC;
+    --accent:#0E6B55;
+    --accent-ink:#FFFFFF;
+    --accent-soft:#E4EFEA;
+    --danger:#B5432F;
+    --grid-dot: rgba(21,32,28,0.10);
+    --shadow: 0 1px 2px rgba(21,32,28,0.06), 0 8px 24px -12px rgba(21,32,28,0.18);
+    --radius-lg:22px;
+    --radius-md:14px;
+    --radius-sm:9px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12140F;
+      --card:#1B1F19;
+      --ink:#EDEFE9;
+      --ink-soft:#9AA39B;
+      --line:#2B302A;
+      --accent:#37C29A;
+      --accent-ink:#0B1512;
+      --accent-soft:#1E2C26;
+      --danger:#E08769;
+      --grid-dot: rgba(237,239,233,0.09);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12140F;
+    --card:#1B1F19;
+    --ink:#EDEFE9;
+    --ink-soft:#9AA39B;
+    --line:#2B302A;
+    --accent:#37C29A;
+    --accent-ink:#0B1512;
+    --accent-soft:#1E2C26;
+    --danger:#E08769;
+    --grid-dot: rgba(237,239,233,0.09);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:32px 16px 64px;
+  }
+  h1,h2,.brand{font-family:"Space Grotesk","Segoe UI",sans-serif;}
+
+  .wrap{max-width:460px;margin:0 auto;}
+
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:10px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .brand-mark svg{width:18px;height:18px;}
+  .brand-name{font-weight:600;font-size:15px;color:var(--ink-soft);letter-spacing:0.01em;}
+
+  /* ---- hero: mock home screen preview ---- */
+  .hero{
+    background:
+      radial-gradient(var(--grid-dot) 1.4px, transparent 1.4px);
+    background-size:20px 20px;
+    background-position: -4px -4px;
+    background-color: var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    padding:30px 20px 24px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:var(--shadow);
+    margin-bottom:20px;
+  }
+  .hero-row{display:flex;gap:22px;align-items:flex-start;justify-content:center;width:100%;max-width:280px;}
+  .ghost-icon{
+    width:56px;height:56px;border-radius:15px;
+    background:var(--line);opacity:.55;
+  }
+  .ghost-label{width:40px;height:8px;border-radius:4px;background:var(--line);margin:8px auto 0;opacity:.55;}
+  .hero-item{display:flex;flex-direction:column;align-items:center;}
+  .live-icon-tile{
+    width:64px;height:64px;border-radius:17px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;line-height:1;
+    box-shadow:0 4px 10px -4px rgba(0,0,0,0.35), inset 0 0 0 0.5px rgba(255,255,255,0.15);
+    transition:background-color .2s ease;
+    user-select:none;
+  }
+  .live-label{
+    margin-top:8px;font-size:11.5px;font-weight:500;color:var(--ink);
+    max-width:82px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .hero-caption{margin-top:18px;font-size:13px;color:var(--ink-soft);text-align:center;line-height:1.5;}
+
+  h1{font-size:21px;font-weight:600;margin:0 0 4px;letter-spacing:-0.01em;}
+  .sub{font-size:14px;color:var(--ink-soft);margin:0 0 20px;line-height:1.5;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    padding:20px;
+    box-shadow:var(--shadow);
+    margin-bottom:16px;
+  }
+
+  label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  .field{margin-bottom:16px;}
+  .field:last-child{margin-bottom:0;}
+  input[type=url], input[type=text]{
+    width:100%;
+    padding:11px 13px;
+    font-size:15px;
+    color:var(--ink);
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    outline:none;
+    font-family:inherit;
+  }
+  input[type=url]:focus, input[type=text]:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:6px;line-height:1.4;}
+
+  .swatches{display:flex;flex-wrap:wrap;gap:8px;}
+  .swatch{
+    width:34px;height:34px;border-radius:10px;border:2px solid transparent;
+    cursor:pointer;padding:0;
+  }
+  .swatch.active{border-color:var(--ink);}
+
+  .emojis{display:flex;flex-wrap:wrap;gap:8px;}
+  .emoji-btn{
+    width:38px;height:38px;border-radius:10px;
+    border:1px solid var(--line);background:var(--bg);
+    font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .emoji-btn.active{border-color:var(--accent);background:var(--accent-soft);}
+
+  button.primary{
+    width:100%;
+    padding:13px;
+    font-size:15px;
+    font-weight:600;
+    font-family:inherit;
+    color:var(--accent-ink);
+    background:var(--accent);
+    border:none;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    margin-top:4px;
+  }
+  button.primary:active{opacity:.85;}
+
+  /* ---- result ---- */
+  #result{display:none;}
+  .result-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .result-icon{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+  .result-title{font-weight:600;font-size:15px;}
+  .result-url{font-size:12.5px;color:var(--ink-soft);word-break:break-all;}
+
+  .link-row{display:flex;gap:8px;margin-bottom:16px;}
+  .link-row input{flex:1;font-size:12.5px;color:var(--ink-soft);background:var(--bg);}
+  .copy-btn{
+    padding:0 16px;border-radius:var(--radius-sm);border:1px solid var(--line);
+    background:var(--card);color:var(--ink);font-weight:600;font-size:13px;cursor:pointer;
+    white-space:nowrap;
+  }
+  .copy-btn.copied{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+
+  .qr-wrap{display:flex;justify-content:center;padding:16px 0 4px;}
+  #qrcode{border-radius:var(--radius-sm);overflow:hidden;line-height:0;}
+
+  .steps{margin-top:18px;border-top:1px solid var(--line);padding-top:16px;}
+  .steps h2{font-size:13px;font-weight:600;color:var(--ink-soft);margin:0 0 10px;}
+  .step-tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .step-tab{
+    flex:1;padding:7px;border-radius:var(--radius-sm);border:1px solid var(--line);
+    background:var(--bg);font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;text-align:center;
+  }
+  .step-tab.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+  .step-list{list-style:none;margin:0;padding:0;font-size:13.5px;line-height:1.6;color:var(--ink);}
+  .step-list li{display:flex;gap:10px;margin-bottom:8px;}
+  .step-list li:last-child{margin-bottom:0;}
+  .step-num{
+    flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+    font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+  .step-panel{display:none;}
+  .step-panel.active{display:block;}
+
+  /* ---- history ---- */
+  #history-card{display:none;}
+  .history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .history-head h2{font-size:13px;font-weight:600;color:var(--ink-soft);margin:0;}
+  .clear-btn{background:none;border:none;font-size:12.5px;color:var(--danger);cursor:pointer;padding:0;font-family:inherit;}
+  .history-item{
+    display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);
+  }
+  .history-item:first-child{border-top:none;}
+  .h-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .h-text{flex:1;min-width:0;}
+  .h-title{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .h-url{font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .h-use{font-size:12px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 2px;font-family:inherit;}
+
+  /* ---- redirect mode ---- */
+  .redirect-screen{
+    min-height:calc(100vh - 96px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+  }
+  .redirect-icon{
+    width:88px;height:88px;border-radius:22px;display:flex;align-items:center;justify-content:center;
+    font-size:42px;box-shadow:0 8px 20px -8px rgba(0,0,0,0.3);margin-bottom:18px;
+  }
+  .redirect-title{font-size:19px;font-weight:600;margin-bottom:6px;}
+  .redirect-url{font-size:13px;color:var(--ink-soft);margin-bottom:26px;word-break:break-all;max-width:320px;}
+  .ring{width:40px;height:40px;position:relative;margin-bottom:26px;}
+  .ring svg{transform:rotate(-90deg);width:40px;height:40px;}
+  .ring circle{fill:none;stroke-width:3;}
+  .ring .track{stroke:var(--line);}
+  .ring .bar{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .1s linear;}
+  .redirect-actions{display:flex;flex-direction:column;gap:10px;width:100%;max-width:260px;}
+  .btn-open{
+    padding:12px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:var(--accent-ink);
+    font-weight:600;font-size:14.5px;cursor:pointer;font-family:inherit;
+  }
+  .btn-cancel{
+    padding:12px;border-radius:var(--radius-sm);border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+    font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;
+  }
+  .redirect-hint{
+    margin-top:22px;font-size:12.5px;color:var(--ink-soft);max-width:280px;line-height:1.6;
+    display:none;
+  }
+  .redirect-hint.show{display:block;}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var qs = new URLSearchParams(location.search);
+  var targetUrlEnc = qs.get('u');
+
+  var EMOJIS = ['🔗','🌐','⭐','📌','📰','🛒','🎵','💬','📚','🎮','🍜','✈️'];
+  var COLORS = ['#0E6B55','#2B59D8','#B5432F','#8A4FD1','#C68A18','#1F7A8C','#2F2F35','#C24C79'];
+
+  function esc(s){
+    var d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML;
+  }
+
+  function roundRectPath(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function generateIconDataUrl(emoji, color, size){
+    size = size || 180;
+    var canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    roundRectPath(ctx,0,0,size,size,size*0.225);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.font = (size*0.52) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, size/2, size*0.565);
+    return canvas.toDataURL('image/png');
+  }
+
+  function hostnameOf(u){
+    try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return u; }
+  }
+
+  function buildShortcutLink(url, title, emoji, color){
+    var p = new URLSearchParams();
+    p.set('u', url);
+    p.set('t', title);
+    p.set('e', emoji);
+    p.set('c', color.replace('#',''));
+    return location.origin + location.pathname + '?' + p.toString();
+  }
+
+  /* ---------------- history (localStorage, per-viewer) ---------------- */
+  function loadHistory(){
+    try{
+      var raw = localStorage.getItem('shortcut_history_v1');
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveHistory(list){
+    try{ localStorage.setItem('shortcut_history_v1', JSON.stringify(list.slice(0,12))); }catch(e){}
+  }
+  function addHistory(item){
+    var list = loadHistory();
+    list = list.filter(function(x){ return x.link !== item.link; });
+    list.unshift(item);
+    saveHistory(list);
+  }
+
+  /* ==================================================================
+     MODE B: redirect screen
+     ================================================================== */
+  function renderRedirect(){
+    var url, title, emoji, color;
+    try{ url = decodeURIComponent(targetUrlEnc); }catch(e){ url = targetUrlEnc; }
+    title = qs.get('t') ? decodeURIComponent(qs.get('t')) : hostnameOf(url);
+    emoji = qs.get('e') ? decodeURIComponent(qs.get('e')) : '🔗';
+    color = qs.get('c') ? ('#'+qs.get('c')) : '#0E6B55';
+
+    document.title = title;
+
+    // set icons for when the user adds this exact page to the home screen
+    var iconUrl = generateIconDataUrl(emoji, color, 180);
+    var link1 = document.createElement('link');
+    link1.rel = 'apple-touch-icon'; link1.href = iconUrl;
+    document.head.appendChild(link1);
+    var link2 = document.createElement('link');
+    link2.rel = 'icon'; link2.href = iconUrl;
+    document.head.appendChild(link2);
+    var meta = document.createElement('meta');
+    meta.name = 'apple-mobile-web-app-capable'; meta.content = 'yes';
+    document.head.appendChild(meta);
+    var meta2 = document.createElement('meta');
+    meta2.name = 'apple-mobile-web-app-title'; meta2.content = title;
+    document.head.appendChild(meta2);
+    var meta3 = document.createElement('meta');
+    meta3.name = 'theme-color'; meta3.content = color;
+    document.head.appendChild(meta3);
+
+    var app = document.getElementById('app');
+    app.innerHTML =
+      '<div class="redirect-screen">' +
+        '<div class="redirect-icon" style="background:'+color+'">'+esc(emoji)+'</div>' +
+        '<div class="redirect-title">'+esc(title)+'</div>' +
+        '<div class="redirect-url">'+esc(url)+'</div>' +
+        '<div class="ring" id="ring">' +
+          '<svg viewBox="0 0 40 40"><circle class="track" cx="20" cy="20" r="17"/>' +
+          '<circle class="bar" id="ringBar" cx="20" cy="20" r="17"/></svg>' +
+        '</div>' +
+        '<div class="redirect-actions">' +
+          '<button class="btn-open" id="openNow">立即打开</button>' +
+          '<button class="btn-cancel" id="cancelGo">暂停跳转，先添加到主屏幕</button>' +
+        '</div>' +
+        '<div class="redirect-hint" id="addHint">在此页面停留时，点击浏览器的「分享」按钮，选择「添加到主屏幕」，即可把这个快捷方式保存为手机桌面图标。</div>' +
+      '</div>';
+
+    var circumference = 2 * Math.PI * 17;
+    var bar = document.getElementById('ringBar');
+    bar.style.strokeDasharray = circumference;
+    bar.style.strokeDashoffset = 0;
+
+    var duration = 2200;
+    var start = Date.now();
+    var cancelled = false;
+    var timer = null;
+
+    function go(){
+      if(cancelled) return;
+      window.location.replace(url);
+    }
+    function tick(){
+      if(cancelled) return;
+      var elapsed = Date.now() - start;
+      var pct = Math.min(1, elapsed/duration);
+      bar.style.strokeDashoffset = circumference * pct;
+      if(pct < 1){
+        timer = requestAnimationFrame(tick);
+      } else {
+        go();
+      }
+    }
+    timer = requestAnimationFrame(tick);
+
+    document.getElementById('openNow').addEventListener('click', function(){
+      cancelled = true;
+      go();
+    });
+    document.getElementById('cancelGo').addEventListener('click', function(){
+      cancelled = true;
+      if(timer) cancelAnimationFrame(timer);
+      bar.style.strokeDashoffset = circumference;
+      document.getElementById('addHint').classList.add('show');
+      this.style.display = 'none';
+      document.getElementById('openNow').textContent = '继续前往目标网址';
+    });
+  }
+
+  /* ==================================================================
+     MODE A: generator
+     ================================================================== */
+  function renderGenerator(){
+    var app = document.getElementById('app');
+    app.innerHTML =
+      '<div class="brand">' +
+        '<div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" stroke="white" stroke-width="1.6"/><path d="M4 12h16M12 4v16" stroke="white" stroke-width="1.6"/></svg></div>' +
+        '<div class="brand-name">主屏幕快捷方式</div>' +
+      '</div>' +
+
+      '<div class="hero">' +
+        '<div class="hero-row">' +
+          '<div class="hero-item"><div class="ghost-icon"></div><div class="ghost-label"></div></div>' +
+          '<div class="hero-item">' +
+            '<div class="live-icon-tile" id="liveTile" style="background:'+COLORS[0]+'">'+EMOJIS[0]+'</div>' +
+            '<div class="live-label" id="liveLabel">网站名称</div>' +
+          '</div>' +
+          '<div class="hero-item"><div class="ghost-icon"></div><div class="ghost-label"></div></div>' +
+        '</div>' +
+        '<p class="hero-caption">输入网址，生成一个可以添加到手机主屏幕的图标</p>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<div class="field">' +
+          '<label for="urlInput">网址</label>' +
+          '<input type="url" id="urlInput" placeholder="https://example.com" inputmode="url" autocapitalize="off" autocorrect="off">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label for="titleInput">图标名称（显示在图标下方）</label>' +
+          '<input type="text" id="titleInput" placeholder="例如：我的网站" maxlength="20">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>图标符号</label>' +
+          '<div class="emojis" id="emojiPicker"></div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>图标颜色</label>' +
+          '<div class="swatches" id="colorPicker"></div>' +
+        '</div>' +
+        '<button class="primary" id="genBtn">生成快捷方式链接</button>' +
+      '</div>' +
+
+      '<div class="card" id="result">' +
+        '<div class="result-head">' +
+          '<div class="result-icon" id="resIcon"></div>' +
+          '<div><div class="result-title" id="resTitle"></div><div class="result-url" id="resUrl"></div></div>' +
+        '</div>' +
+        '<div class="link-row">' +
+          '<input type="text" id="resLink" readonly>' +
+          '<button class="copy-btn" id="copyBtn">复制</button>' +
+        '</div>' +
+        '<div class="qr-wrap"><div id="qrcode"></div></div>' +
+        '<div class="steps">' +
+          '<h2>如何保存到桌面</h2>' +
+          '<div class="step-tabs">' +
+            '<div class="step-tab active" data-p="ios">iPhone (Safari)</div>' +
+            '<div class="step-tab" data-p="android">安卓 (Chrome)</div>' +
+          '</div>' +
+          '<div class="step-panel active" data-p="ios">' +
+            '<ol class="step-list">' +
+              '<li><span class="step-num">1</span>在 iPhone 上用 Safari 打开上方链接，或扫描二维码</li>' +
+              '<li><span class="step-num">2</span>点击底部工具栏的「分享」图标（方框加箭头）</li>' +
+              '<li><span class="step-num">3</span>在分享菜单中选择「添加到主屏幕」</li>' +
+              '<li><span class="step-num">4</span>确认名称后点击「添加」，图标即出现在桌面</li>' +
+            '</ol>' +
+          '</div>' +
+          '<div class="step-panel" data-p="android">' +
+            '<ol class="step-list">' +
+              '<li><span class="step-num">1</span>在安卓手机上用 Chrome 打开上方链接，或扫描二维码</li>' +
+              '<li><span class="step-num">2</span>点击右上角的「⋮」菜单</li>' +
+              '<li><span class="step-num">3</span>选择「添加到主屏幕」（或「安装应用」）</li>' +
+              '<li><span class="step-num">4</span>确认后图标即出现在桌面</li>' +
+            '</ol>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="card" id="history-card">' +
+        '<div class="history-head"><h2>最近生成</h2><button class="clear-btn" id="clearHist">清空</button></div>' +
+        '<div id="historyList"></div>' +
+      '</div>';
+
+    // emoji picker
+    var emojiPicker = document.getElementById('emojiPicker');
+    EMOJIS.forEach(function(em, i){
+      var b = document.createElement('button');
+      b.type='button'; b.className='emoji-btn'+(i===0?' active':''); b.textContent = em; b.dataset.emoji = em;
+      emojiPicker.appendChild(b);
+    });
+    var colorPicker = document.getElementById('colorPicker');
+    COLORS.forEach(function(c, i){
+      var b = document.createElement('button');
+      b.type='button'; b.className='swatch'+(i===0?' active':''); b.style.background=c; b.dataset.color=c;
+      colorPicker.appendChild(b);
+    });
+
+    var state = { emoji: EMOJIS[0], color: COLORS[0] };
+
+    function updateLive(){
+      var titleVal = document.getElementById('titleInput').value.trim();
+      var urlVal = document.getElementById('urlInput').value.trim();
+      var displayTitle = titleVal || (urlVal ? hostnameOf(urlVal) : '网站名称');
+      document.getElementById('liveTile').style.background = state.color;
+      document.getElementById('liveTile').textContent = state.emoji;
+      document.getElementById('liveLabel').textContent = displayTitle;
+    }
+
+    emojiPicker.addEventListener('click', function(e){
+      var btn = e.target.closest('.emoji-btn'); if(!btn) return;
+      emojiPicker.querySelectorAll('.emoji-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      state.emoji = btn.dataset.emoji;
+      updateLive();
+    });
+    colorPicker.addEventListener('click', function(e){
+      var btn = e.target.closest('.swatch'); if(!btn) return;
+      colorPicker.querySelectorAll('.swatch').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      state.color = btn.dataset.color;
+      updateLive();
+    });
+    document.getElementById('titleInput').addEventListener('input', updateLive);
+    document.getElementById('urlInput').addEventListener('input', updateLive);
+
+    document.getElementById('genBtn').addEventListener('click', function(){
+      var urlVal = document.getElementById('urlInput').value.trim();
+      if(!urlVal){ document.getElementById('urlInput').focus(); return; }
+      if(!/^https?:\/\//i.test(urlVal)){ urlVal = 'https://' + urlVal; }
+      try{ new URL(urlVal); }catch(e){ alert('请输入有效的网址'); return; }
+
+      var titleVal = document.getElementById('titleInput').value.trim() || hostnameOf(urlVal);
+      var link = buildShortcutLink(urlVal, titleVal, state.emoji, state.color);
+
+      document.getElementById('resIcon').style.background = state.color;
+      document.getElementById('resIcon').textContent = state.emoji;
+      document.getElementById('resTitle').textContent = titleVal;
+      document.getElementById('resUrl').textContent = urlVal;
+      document.getElementById('resLink').value = link;
+      document.getElementById('result').style.display = 'block';
+
+      document.getElementById('qrcode').innerHTML = '';
+      try{
+        new QRCode(document.getElementById('qrcode'), {
+          text: link, width: 148, height: 148,
+          colorDark: '#15201C', colorLight:'#ffffff'
+        });
+      }catch(e){}
+
+      addHistory({ url:urlVal, title:titleVal, emoji:state.emoji, color:state.color, link:link, created:Date.now() });
+      renderHistory();
+
+      document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'});
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', function(){
+      var input = document.getElementById('resLink');
+      var btn = this;
+      function done(){ btn.textContent='已复制'; btn.classList.add('copied'); setTimeout(function(){btn.textContent='复制'; btn.classList.remove('copied');}, 1600); }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(input.value).then(done).catch(function(){ input.select(); document.execCommand('copy'); done(); });
+      } else {
+        input.select(); document.execCommand('copy'); done();
+      }
+    });
+
+    document.querySelectorAll('.step-tab').forEach(function(tab){
+      tab.addEventListener('click', function(){
+        var p = this.dataset.p;
+        document.querySelectorAll('.step-tab').forEach(function(t){t.classList.remove('active');});
+        document.querySelectorAll('.step-panel').forEach(function(t){t.classList.remove('active');});
+        this.classList.add('active');
+        document.querySelector('.step-panel[data-p="'+p+'"]').classList.add('active');
+      });
+    });
+
+    document.getElementById('clearHist').addEventListener('click', function(){
+      saveHistory([]);
+      renderHistory();
+    });
+
+    function renderHistory(){
+      var list = loadHistory();
+      var card = document.getElementById('history-card');
+      var box = document.getElementById('historyList');
+      if(!list.length){ card.style.display='none'; return; }
+      card.style.display='block';
+      box.innerHTML = list.map(function(item, idx){
+        return '<div class="history-item">' +
+          '<div class="h-icon" style="background:'+item.color+'">'+esc(item.emoji)+'</div>' +
+          '<div class="h-text"><div class="h-title">'+esc(item.title)+'</div><div class="h-url">'+esc(item.url)+'</div></div>' +
+          '<button class="h-use" data-idx="'+idx+'">使用</button>' +
+        '</div>';
+      }).join('');
+      box.querySelectorAll('.h-use').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var item = list[parseInt(this.dataset.idx,10)];
+          document.getElementById('urlInput').value = item.url;
+          document.getElementById('titleInput').value = item.title;
+          state.emoji = item.emoji; state.color = item.color;
+          emojiPicker.querySelectorAll('.emoji-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.emoji===item.emoji); });
+          colorPicker.querySelectorAll('.swatch').forEach(function(b){ b.classList.toggle('active', b.dataset.color===item.color); });
+          updateLive();
+          document.getElementById('genBtn').click();
+        });
+      });
+    }
+
+    updateLive();
+    renderHistory();
+  }
+
+  if(targetUrlEnc){
+    renderRedirect();
+  } else {
+    renderGenerator();
+  }
+})();
+</script>
+</body>
+</html>
